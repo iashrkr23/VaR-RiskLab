@@ -48,6 +48,7 @@ def load_price_data(
     """
     try:
         import yfinance as yf
+
         raw = yf.download(
             tickers,
             period=period,
@@ -55,25 +56,55 @@ def load_price_data(
             progress=False,
         )
 
-        # yfinance returns multi-level columns when multiple tickers are given
-        if isinstance(raw.columns, pd.MultiIndex):
-            prices = raw["Close"]
-        else:
-            # single-ticker edge case — shouldn't happen with the default list
-            prices = raw[["Close"]].rename(columns={"Close": tickers[0]})
+        if raw is None or raw.empty:
+            raise ValueError("yfinance returned empty data.")
 
-        # Keep only requested tickers (yfinance may silently drop delisted ones)
+        # ------------------------------------------------------------------
+        # yfinance 1.7+ changed MultiIndex column order.
+        # Older versions: ("Close", "AAPL")  → raw["Close"] works
+        # Newer versions: ("AAPL", "Close")  → need to handle both
+        # ------------------------------------------------------------------
+        prices = None
+
+        if isinstance(raw.columns, pd.MultiIndex):
+            levels = raw.columns.get_level_values(0).unique().tolist()
+            # Try old-style: top level is price field ("Close", "Open", ...)
+            if "Close" in levels:
+                prices = raw["Close"].copy()
+            else:
+                # New-style: top level is ticker symbol
+                # Collect 'Close' from each ticker's sub-columns
+                frames = {}
+                for ticker in tickers:
+                    if ticker in levels:
+                        sub = raw[ticker]
+                        if "Close" in sub.columns:
+                            frames[ticker] = sub["Close"]
+                if frames:
+                    prices = pd.DataFrame(frames)
+                else:
+                    raise ValueError(
+                        f"Cannot find 'Close' prices in columns: {raw.columns.tolist()}"
+                    )
+        else:
+            # Single ticker or flat columns
+            if "Close" in raw.columns:
+                prices = raw[["Close"]].rename(columns={"Close": tickers[0]})
+            else:
+                raise ValueError(f"No 'Close' column found. Columns: {raw.columns.tolist()}")
+
+        if prices is None or prices.empty:
+            raise ValueError("Price extraction returned empty DataFrame.")
+
+        # Keep only requested tickers
         available = [t for t in tickers if t in prices.columns]
         if not available:
-            raise ValueError("No ticker data returned by yfinance.")
+            raise ValueError("No recognised tickers in downloaded data.")
 
         prices = prices[available].copy()
 
-        # Handle missing values: forward-fill gaps (e.g. holidays), then
-        # back-fill any leading NaNs.
+        # Forward-fill holiday gaps, back-fill any leading NaNs
         prices = prices.ffill().bfill()
-
-        # Drop rows where *all* assets are still NaN (very rare)
         prices.dropna(how="all", inplace=True)
 
         if prices.empty:
@@ -84,7 +115,7 @@ def load_price_data(
     except Exception as exc:
         # ------------------------------------------------------------------
         # Fallback: generate synthetic price data so the app still runs
-        # when yfinance is unavailable (e.g. offline environment).
+        # when yfinance is unavailable or returns unexpected format.
         # ------------------------------------------------------------------
         print(
             f"[data_loader] yfinance download failed ({exc}). "

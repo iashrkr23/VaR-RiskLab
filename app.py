@@ -304,19 +304,36 @@ with st.spinner("🔄 Loading market data..."):
         if w_sum > 0:
             weights_used = {t: w / w_sum for t, w in weights_used.items()}
 
+        # Guard: if returns are still empty, trigger fallback
+        if returns_all.empty or len(returns_all) < 50:
+            raise ValueError(
+                f"Insufficient return data: {len(returns_all)} rows. "
+                "Falling back to synthetic data."
+            )
+
         data_ok = True
 
     except Exception as e:
-        st.error(f"❌ Failed to load data: {e}")
-        data_ok = False
+        st.warning(f"⚠️ Live data issue ({e}) — using synthetic data as fallback.")
+        # Use synthetic prices as fallback
+        from src.data_loader import _generate_synthetic_prices
+        prices      = _generate_synthetic_prices(DEFAULT_TICKERS)
+        returns_all = compute_returns(prices)
+        available_tickers = DEFAULT_TICKERS
+        weights_used = {t: weights_decimal[t] for t in available_tickers}
+        w_sum = sum(weights_used.values())
+        if w_sum > 0:
+            weights_used = {t: w / w_sum for t, w in weights_used.items()}
+        data_ok = True
 
 if not data_ok:
     st.stop()
 
 # Show data info
 n_days_data = len(returns_all)
-date_range  = f"{returns_all.index[0].strftime('%d %b %Y')} → {returns_all.index[-1].strftime('%d %b %Y')}"
-st.caption(f"📅 Data: {n_days_data} trading days  |  {date_range}  |  Tickers: {', '.join(available_tickers)}")
+date_start  = returns_all.index[0].strftime('%d %b %Y')
+date_end    = returns_all.index[-1].strftime('%d %b %Y')
+st.caption(f"Data: {n_days_data} trading days | {date_start} to {date_end} | Tickers: {', '.join(available_tickers)}")
 
 
 # ===========================================================================
