@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.installed.cfg
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE & editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data cache (auto-downloaded; do not commit raw data)
+data/*.csv
+data/*.parquet
+data/*.pkl
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+.env.*

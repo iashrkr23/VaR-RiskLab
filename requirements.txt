@@ -1,0 +1,16 @@
+# VaR-RiskLab — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Data
+yfinance>=0.2.38
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Scientific / Statistics
+scipy>=1.11.0
+
+# Visualisation
+plotly>=5.17.0
+
+# Dashboard
+streamlit>=1.28.0
