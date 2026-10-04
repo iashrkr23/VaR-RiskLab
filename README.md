@@ -243,6 +243,8 @@ where $\phi(\cdot)$ is the standard normal PDF.
 3. Compute simulated portfolio returns: $r_p^{(i)} = \mathbf{w}^\top \mathbf{r}^{(i)}$
 4. $\text{VaR}_\alpha = Q_{1-\alpha}(\{-r_p^{(i)} \cdot V\})$
 
+*Model Note:* The current implementation uses a multivariate normal model; the Monte Carlo framework can be extended to other distributions (e.g. Student's t, copulas) and nonlinear payoffs (e.g. options full revaluation).
+
 ---
 
 ### VaR Backtesting — Kupiec Test
@@ -308,18 +310,22 @@ The following extensions would be natural next steps for a more advanced impleme
 ---
 
 **1. What is VaR?**
-Value at Risk is a statistical estimate of the maximum expected loss of a portfolio over a specified
-time horizon at a given confidence level, under normal market conditions. A 99%, 1-day VaR of
-\$2,000 means the model estimates the portfolio should not lose more than \$2,000 on ~99% of trading
-days. Crucially, VaR says nothing about losses *beyond* the threshold.
+Value at Risk (VaR) is a quantile-based estimate of portfolio loss over a specified time horizon
+and confidence level, under normal market conditions. Intuitively, a 99%, 1-day VaR of \$2,000 means
+that on 99% of trading days, portfolio losses are expected to be \$2,000 or less (or equivalently,
+there is a 1% probability of losing more than \$2,000 in a single day). Crucially, VaR is a loss
+threshold quantile — it is not the maximum possible loss, and it says nothing about the severity
+of losses beyond the threshold.
 
 ---
 
 **2. Why implement three VaR methodologies?**
 Each method makes different assumptions: Historical Simulation uses the empirical return
-distribution with no parametric assumptions; Parametric VaR assumes normality and is fast to
-compute; Monte Carlo is the most flexible and can accommodate complex distributions and payoffs.
-By comparing all three, we can assess model sensitivity and validate that results are consistent.
+distribution with no parametric assumptions; Parametric VaR assumes normality and provides a closed-form
+analytical solution; Monte Carlo explicitly simulates scenario-by-scenario outcomes.
+While our baseline Monte Carlo implementation uses a multivariate normal model, the Monte Carlo
+framework can be extended to non-normal distributions and non-linear option payoffs.
+Comparing all three allows us to evaluate model risk and validate consistency.
 
 ---
 
@@ -335,9 +341,12 @@ fatter than a normal distribution.
 **4. How does Monte Carlo VaR work?**
 We calibrate a multivariate normal distribution to historical returns (estimating mean and
 covariance), then simulate thousands of hypothetical one-day portfolio returns. The loss
-distribution is built from these simulated scenarios, and VaR is read off as the relevant quantile.
-The key advantage is that more complex distributions or payoffs can be used — it is not restricted
-to the normal assumption.
+distribution is built from these simulated scenarios, and VaR is read off as the empirical quantile of the simulated losses.
+
+**Key Interview Distinction — Parametric vs. Monte Carlo VaR:**
+- **Parametric VaR** is a closed-form analytical calculation ($z_\alpha \cdot \sigma_p - \mu_p$).
+- **Monte Carlo VaR** explicitly generates simulated scenario paths.
+- *Framework Flexibility:* The current implementation uses a multivariate normal model; the Monte Carlo framework can be extended to other distributions (e.g. Student's t, copulas) and nonlinear payoffs (e.g. options full revaluation).
 
 ---
 

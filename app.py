@@ -821,17 +821,17 @@ with tab_method:
 
     with st.expander("📘 What is Value at Risk (VaR)?", expanded=True):
         st.markdown("""
-        **Value at Risk (VaR)** is a statistical measure of the potential loss in the value of a
-        portfolio over a defined time horizon, at a given confidence level.
+        **Value at Risk (VaR)** is a **quantile-based estimate** of portfolio loss over a specified
+        time horizon and confidence level, under normal market conditions.
 
-        **Example interpretation (not a guarantee):**
-        A 99%, 1-day VaR of \\$2,000 means that, under the model's assumptions, the portfolio
-        is not expected to lose more than \\$2,000 on approximately 99% of trading days.
+        **Intuitive Interpretation:**
+        A 99%, 1-day VaR of \\$2,000 means that on 99% of trading days, portfolio losses are expected
+        to be \\$2,000 or less (equivalently, there is a 1% probability of losing more than \\$2,000 in a single day).
 
-        **Limitations:**
-        - VaR says nothing about the magnitude of losses *beyond* the threshold.
-        - VaR depends heavily on model assumptions.
-        - During market crises, correlations spike and historical VaR can significantly understate risk.
+        **Crucial Distinctions & Limitations:**
+        - **Not the maximum loss:** VaR is a threshold quantile, not the absolute maximum loss.
+        - **Tail severity ignored:** VaR says nothing about the magnitude of losses *beyond* the threshold (which is why Expected Shortfall is used).
+        - **Model dependence:** VaR calculations rely heavily on empirical or parametric assumptions.
         """)
 
     with st.expander("📗 Historical Simulation VaR"):
@@ -858,7 +858,7 @@ with tab_method:
 
     with st.expander("📙 Parametric (Variance-Covariance) VaR"):
         st.markdown(r"""
-        **Method:** Assume portfolio returns are normally distributed.
+        **Method:** Assume portfolio returns are normally distributed and compute closed-form analytics.
 
         **Portfolio Volatility from Covariance Matrix:**
         $$\sigma_p^2 = \mathbf{w}^\top \Sigma \mathbf{w}$$
@@ -883,7 +883,7 @@ with tab_method:
 
     with st.expander("📕 Monte Carlo VaR"):
         st.markdown(r"""
-        **Method:** Simulate thousands of scenarios from a calibrated distribution.
+        **Method:** Simulate thousands of explicit scenarios from a calibrated distribution.
 
         **Steps:**
         1. Calibrate $\boldsymbol{\mu}$ (mean return vector) and $\Sigma$ (covariance matrix) from history.
@@ -891,14 +891,18 @@ with tab_method:
         3. Compute simulated portfolio returns: $r_p = \mathbf{w}^\top \mathbf{r}$.
         4. VaR = the $(1-\alpha)$ quantile of simulated losses.
 
+        **Key Interview Distinction — Parametric vs. Monte Carlo:**
+        - **Parametric VaR** is a closed-form analytical calculation ($z_\alpha \sigma_p - \mu_p$).
+        - **Monte Carlo VaR** explicitly generates simulated scenario paths.
+        - *Framework Flexibility:* The current implementation uses a multivariate normal model; the Monte Carlo framework can be extended to other distributions (e.g. Student's t, copulas) and nonlinear payoffs (e.g. options full revaluation).
+
         **Advantages:**
-        - Highly flexible — can accommodate complex payoffs, non-normal distributions.
+        - Highly flexible — extensible to non-linear payoffs and non-normal distributions.
         - Produces a full simulated loss distribution.
 
         **Limitations:**
         - Computationally intensive for large portfolios.
         - Results depend on the assumed distribution and calibration period.
-        - Model risk: garbage in, garbage out.
         """)
 
     with st.expander("📓 Expected Shortfall (CVaR)"):
